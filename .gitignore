@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data cache (large files)
+data/cache/
+*.json
+*.csv
+
+# Model files (large)
+models/*/
+!models/finetuned/training_info.json
+
+# FAISS indexes (large)
+indexes/*/
+
+# Results (keep structure but ignore large files)
+results/*.jsonl
+results/**/*.jsonl
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Checkpoints
+checkpoints/
+
+# System files
+0.26.0
+test_index/
+
+# Old documentation (superseded by README)
+WEEK*.md
+GPU_TRAINING_STATUS.md
+PROJECT_STRUCTURE.md
+explore_cosqa.ipynb
