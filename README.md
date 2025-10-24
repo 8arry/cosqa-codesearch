@@ -53,7 +53,12 @@ python scripts/02_build_index.py --model intfloat/e5-base-v2
 python scripts/03_evaluate_baseline.py
 
 # Step 4: Fine-tune model (GPU recommended, ~2.6 hours)
+# Option A: Basic fine-tuning (original method, no loss tracking)
 python scripts/04_finetune.py --model intfloat/e5-base-v2 --epochs 3 --batch-size 32
+
+# Option B: Custom training with complete loss tracking (recommended)
+# This version records loss at every step and saves to JSON
+python scripts/04c_custom_training.py
 
 # Step 5: Evaluate fine-tuned model and compare
 python scripts/05_evaluate_finetuned.py --model-dir models/finetuned
@@ -97,8 +102,12 @@ cosqa-codesearch/
 │   ├── 01_prepare_data.py  # Data preparation & caching
 │   ├── 02_build_index.py   # FAISS index construction
 │   ├── 03_evaluate_baseline.py  # Baseline evaluation
-│   ├── 04_finetune.py      # Model fine-tuning (GPU)
-│   └── 05_evaluate_finetuned.py  # Fine-tuned evaluation
+│   ├── 04_finetune.py      # Basic fine-tuning (no loss tracking)
+│   ├── 04c_custom_training.py  # ⭐ Custom training with full loss tracking
+│   ├── 05_evaluate_finetuned.py  # Fine-tuned evaluation
+│   ├── 06_bonus_experiments.py  # Bonus analysis experiments
+│   ├── 07_faiss_hyperparameters.py  # FAISS hyperparameter tuning
+│   └── 08_generate_final_report.py  # Results summary generator
 ├── notebooks/
 │   ├── explore_cosqa.ipynb # Dataset exploration
 │   └── final_report.ipynb  # Comprehensive results & visualizations
@@ -119,6 +128,8 @@ cosqa-codesearch/
 - **Hardware**: NVIDIA RTX 2060 (6GB) for training
 
 ### Training Configuration
+
+**04_finetune.py (Original)**
 ```python
 Base Model: intfloat/e5-base-v2
 Training Pairs: 9,020 positive (query, code) pairs
@@ -128,6 +139,21 @@ Learning Rate: 2e-5
 Warmup Steps: 100
 Total Steps: 846
 Training Time: 155.9 minutes (~2.6 hours on GPU)
+Note: Uses sentence-transformers fit() - no step-by-step loss tracking
+```
+
+**04c_custom_training.py (With Loss Tracking)** ⭐ Actually Used
+```python
+Base Model: intfloat/e5-base-v2
+Training Pairs: 9,020 positive (query, code) pairs
+Batch Size: 16 (memory optimized)
+Epochs: 3
+Learning Rate: 2e-5
+Warmup Steps: 100
+Total Steps: 1,692
+Training Time: 64.57 minutes (~1.08 hours on GPU)
+Loss Tracking: Every step saved to JSON (1,692 entries)
+Initial Loss: 1.5490 → Final Loss: 0.0226 (98.5% reduction)
 ```
 
 ### Evaluation Protocol

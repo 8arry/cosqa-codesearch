@@ -32,6 +32,7 @@ data/cache/
 # Model files (large)
 models/*/
 !models/finetuned/training_info.json
+!models/finetuned/loss_history.json
 
 # FAISS indexes (large)
 indexes/*/
@@ -39,6 +40,8 @@ indexes/*/
 # Results (keep structure but ignore large files)
 results/*.jsonl
 results/**/*.jsonl
+!results/faiss_hyperparams/*.json
+!results/faiss_hyperparams/*.md
 
 # Temporary files
 *.log

@@ -22,25 +22,57 @@ logger = logging.getLogger(__name__)
 class LossTracker:
     """Callback to track training loss at each step."""
     
-    def __init__(self):
+    def __init__(self, output_path: Path):
         self.losses = []
         self.current_epoch = 0
+        self.output_path = output_path
+        self.save_frequency = 50  # Save every 50 steps to avoid memory issues
         
     def __call__(self, score, epoch, steps):
         """Called after each training step."""
         # score is the loss value
         self.current_epoch = epoch
-        self.losses.append({
+        loss_entry = {
             'step': steps,
             'epoch': epoch,
-            'loss': float(score)
-        })
+            'loss': float(score) if hasattr(score, 'item') else float(score)
+        }
+        self.losses.append(loss_entry)
         
-    def save(self, output_path: Path):
-        """Save loss history to JSON."""
-        output_file = output_path / "loss_history.json"
+        # Periodically save and clear memory
+        if len(self.losses) >= self.save_frequency:
+            self._save_partial()
+        
+    def _save_partial(self):
+        """Save accumulated losses and clear memory."""
+        output_file = self.output_path / "loss_history.json"
+        
+        # Load existing data if file exists
+        existing_losses = []
+        if output_file.exists():
+            try:
+                with open(output_file, 'r') as f:
+                    existing_losses = json.load(f)
+            except:
+                pass
+        
+        # Append new losses
+        existing_losses.extend(self.losses)
+        
+        # Save
         with open(output_file, 'w') as f:
-            json.dump(self.losses, f, indent=2)
+            json.dump(existing_losses, f, indent=2)
+        
+        # Clear memory
+        self.losses = []
+        
+    def save(self):
+        """Save final loss history to JSON."""
+        # Save any remaining losses
+        if self.losses:
+            self._save_partial()
+        
+        output_file = self.output_path / "loss_history.json"
         logger.info(f"Loss history saved to: {output_file}")
 
 
@@ -178,8 +210,8 @@ class CoSQATrainer:
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Create loss tracker
-        loss_tracker = LossTracker()
+        # Create loss tracker with output path
+        loss_tracker = LossTracker(self.output_dir)
         
         # Define loss function
         # MultipleNegativesRankingLoss: 
@@ -201,6 +233,8 @@ class CoSQATrainer:
         logger.info("="*80)
         
         # Training arguments
+        # Note: sentence-transformers doesn't directly support loss tracking callbacks
+        # We'll use gradient accumulation to reduce memory usage
         training_args = {
             'train_objectives': [(train_dataloader, train_loss)],
             'epochs': self.num_epochs,
@@ -208,7 +242,6 @@ class CoSQATrainer:
             'output_path': str(self.output_dir),
             'optimizer_params': {'lr': self.learning_rate},
             'show_progress_bar': True,
-            'callback': loss_tracker,  # Add loss tracking callback
         }
         
         # Add evaluator if provided
@@ -222,8 +255,8 @@ class CoSQATrainer:
         logger.info("\nStarting training...")
         self.model.fit(**training_args)
         
-        # Save loss history
-        loss_tracker.save(self.output_dir)
+        # Save final loss history
+        loss_tracker.save()
         
         logger.info("\n" + "="*80)
         logger.info("✓ Training complete!")

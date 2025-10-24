@@ -19,12 +19,11 @@ import faiss
 import numpy as np
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "data"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from load_cosqa import CoSQADataLoader
+from data.load_cosqa import CoSQADataLoader
 from sentence_transformers import SentenceTransformer
-from evaluation.metrics import EvaluationMetrics
+from src.evaluation.metrics import calculate_all_metrics
 
 
 class FAISSHyperparameterExperiment:
@@ -68,7 +67,7 @@ class FAISSHyperparameterExperiment:
         print(f"Test set: {len(self.test_df)} pairs")
         
         # Load full corpus for indexing
-        corpus_data = loader.load_corpus()
+        corpus_data = loader.get_all_corpus()
         if isinstance(corpus_data, list):
             self.corpus = {doc['id']: doc['text'] for doc in corpus_data}
         else:
@@ -242,27 +241,42 @@ class FAISSHyperparameterExperiment:
         scores, indices = index.search(self.query_embeddings, k)
         search_time = time.time() - search_start
         
-        # Convert indices to corpus IDs and compute metrics
-        results = {}
+        # Prepare data for calculate_all_metrics
+        ranks = []
+        relevance_scores_list = []
+        
         for i, qid in enumerate(self.test_query_ids):
             # Get top-k corpus IDs
             retrieved_ids = [self.corpus_ids[idx] for idx in indices[i]]
-            retrieved_scores = scores[i].tolist()
             
-            results[qid] = list(zip(retrieved_ids, retrieved_scores))
+            # Get relevant doc IDs for this query
+            relevant_ids = self.relevance.get(qid, set())
+            
+            # Find rank of first relevant document
+            rank = float('inf')
+            for idx, doc_id in enumerate(retrieved_ids):
+                if doc_id in relevant_ids:
+                    rank = idx + 1  # 1-indexed
+                    break
+            
+            ranks.append(rank)
+            
+            # Create binary relevance scores
+            relevance_scores = [1 if doc_id in relevant_ids else 0 for doc_id in retrieved_ids]
+            relevance_scores_list.append(relevance_scores)
         
-        # Compute metrics
-        metrics_calc = EvaluationMetrics(k=k)
-        metrics = metrics_calc.compute_all(results, self.relevance)
+        # Compute metrics using calculate_all_metrics
+        k_values = [1, 5, 10, 20, 50, 100] if k >= 100 else [1, 5, 10, 20, 50]
+        metrics = calculate_all_metrics(ranks, relevance_scores_list, k_values=k_values)
         
         # Add timing info
         metrics['search_time_total'] = search_time
         metrics['search_time_per_query'] = search_time / len(self.test_queries)
         metrics['queries_per_second'] = len(self.test_queries) / search_time
         
-        print(f"  Recall@{k}:  {metrics[f'recall@{k}']:.4f}")
-        print(f"  MRR@{k}:     {metrics[f'mrr@{k}']:.4f}")
-        print(f"  nDCG@{k}:    {metrics[f'ndcg@{k}']:.4f}")
+        print(f"  Recall@{k}:  {metrics.get(f'recall@{k}', 'N/A'):.4f}" if f'recall@{k}' in metrics else f"  Recall@{k}: N/A")
+        print(f"  MRR@{k}:     {metrics.get(f'mrr@{k}', 'N/A'):.4f}" if f'mrr@{k}' in metrics else f"  MRR@{k}: N/A")
+        print(f"  nDCG@{k}:    {metrics.get(f'ndcg@{k}', 'N/A'):.4f}" if f'ndcg@{k}' in metrics else f"  nDCG@{k}: N/A")
         print(f"  Search time: {search_time:.4f}s ({metrics['queries_per_second']:.1f} queries/s)")
         
         return metrics
