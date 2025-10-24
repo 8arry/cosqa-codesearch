@@ -10,11 +10,12 @@ A state-of-the-art dense retrieval system for code search, fine-tuned on the CoS
 
 | Metric        | Baseline | Fine-tuned | Improvement  |
 | ------------- | -------- | ---------- | ------------ |
-| **nDCG@10**   | 0.4372   | **0.5534** | **+26.6%** ✨ |
-| **Recall@10** | 0.5780   | **0.7120** | **+23.2%** ✨ |
-| **MRR@10**    | 0.3942   | **0.5047** | **+28.0%** ✨ |
+| **nDCG@10**   | 0.4372   | **0.5344** | **+22.2%** ✨ |
+| **Recall@10** | 0.5780   | **0.7060** | **+22.1%** ✨ |
+| **MRR@10**    | 0.3942   | **0.4823** | **+22.3%** ✨ |
 
-**vs CoIR Benchmark**: +75.7% improvement over published e5-base-v2 baseline!
+**Training Method**: Custom training loop (04c_custom_training.py) with batch_size=16
+**vs CoIR Benchmark**: +69.7% improvement over published e5-base-v2 baseline!
 
 ## 📋 Project Overview
 
@@ -129,7 +130,9 @@ cosqa-codesearch/
 
 ### Training Configuration
 
-**04_finetune.py (Original)**
+We implemented two training approaches with different trade-offs:
+
+#### 04_finetune.py (Original - Better Performance)
 ```python
 Base Model: intfloat/e5-base-v2
 Training Pairs: 9,020 positive (query, code) pairs
@@ -139,14 +142,17 @@ Learning Rate: 2e-5
 Warmup Steps: 100
 Total Steps: 846
 Training Time: 155.9 minutes (~2.6 hours on GPU)
-Note: Uses sentence-transformers fit() - no step-by-step loss tracking
+Results: nDCG@10=0.5534, Recall@10=71.2%, MRR@10=0.5047
+
+✅ Pros: Better performance (more negatives → better contrastive learning)
+❌ Cons: No step-by-step loss tracking, occasional OOM errors
 ```
 
-**04c_custom_training.py (With Loss Tracking)** ⭐ Actually Used
+#### 04c_custom_training.py (Custom Loop - Full Observability) ⭐ Final Choice
 ```python
 Base Model: intfloat/e5-base-v2
 Training Pairs: 9,020 positive (query, code) pairs
-Batch Size: 16 (memory optimized)
+Batch Size: 16 (15 in-batch negatives per sample)
 Epochs: 3
 Learning Rate: 2e-5
 Warmup Steps: 100
@@ -154,7 +160,18 @@ Total Steps: 1,692
 Training Time: 64.57 minutes (~1.08 hours on GPU)
 Loss Tracking: Every step saved to JSON (1,692 entries)
 Initial Loss: 1.5490 → Final Loss: 0.0226 (98.5% reduction)
+Results: nDCG@10=0.5344, Recall@10=70.6%, MRR@10=0.4823
+
+✅ Pros: Complete loss history, stable training, faster, no OOM
+❌ Cons: Slightly lower performance (-3.4% nDCG due to fewer negatives)
 ```
+
+**Design Decision**: We chose **04c_custom_training.py** as the final implementation because:
+1. **Requirement Compliance**: Project requires tracking training loss at each step
+2. **Reproducibility**: Complete loss history enables better analysis and debugging
+3. **Stability**: No OOM errors, more reliable for 6GB GPU
+4. **Speed**: 40% faster training (1.08h vs 2.6h)
+5. **Trade-off**: Small performance drop (0.5534→0.5344) is acceptable for these benefits
 
 ### Evaluation Protocol
 Following [CoIR benchmark](https://arxiv.org/abs/2407.02883):
@@ -169,36 +186,60 @@ Following [CoIR benchmark](https://arxiv.org/abs/2407.02883):
 
 | K    | Baseline | Fine-tuned | Improvement |
 | ---- | -------- | ---------- | ----------- |
-| @1   | 32.4%    | 42.0%      | +29.6%      |
-| @5   | 47.4%    | 59.6%      | +25.7%      |
-| @10  | 57.8%    | 71.2%      | +23.2%      |
-| @20  | 70.6%    | 83.0%      | +17.6%      |
-| @50  | 83.8%    | 94.0%      | +12.2%      |
-| @100 | 89.8%    | 97.2%      | +8.2%       |
+| @1   | 32.4%    | 40.4%      | +24.7%      |
+| @5   | 47.4%    | 59.0%      | +24.5%      |
+| @10  | 57.8%    | 70.6%      | +22.1%      |
+| @20  | 70.6%    | 82.2%      | +16.4%      |
+| @50  | 83.8%    | 92.8%      | +10.7%      |
+| @100 | 89.8%    | 96.6%      | +7.6%       |
 
 ### Comparison with Published Baselines
 
 | Model                   | CoIR Benchmark | Our Implementation | Improvement |
 | ----------------------- | -------------- | ------------------ | ----------- |
 | e5-base-v2 (baseline)   | 0.315          | 0.4372             | +38.8%      |
-| e5-base-v2 (fine-tuned) | N/A            | **0.5534**         | **+75.7%**  |
+| e5-base-v2 (fine-tuned) | N/A            | **0.5344**         | **+69.7%**  |
+
+*Note: Alternative implementation with batch_size=32 achieved nDCG@10=0.5534 (+75.7%), but sacrificed loss tracking.*
+
+### Training Approach Comparison
+
+| Aspect                  | 04_finetune.py (bs=32) | 04c_custom_training.py (bs=16) | Winner |
+| ----------------------- | ---------------------- | ------------------------------ | ------ |
+| **nDCG@10**             | 0.5534                 | 0.5344                         | 04_finetune |
+| **Recall@10**           | 71.2%                  | 70.6%                          | 04_finetune |
+| **Loss Tracking**       | ❌ No                   | ✅ Yes (1,692 steps)            | 04c_custom |
+| **Training Time**       | 2.6 hours              | 1.08 hours                     | 04c_custom |
+| **Memory Stability**    | OOM prone              | Stable                         | 04c_custom |
+| **In-batch Negatives**  | 31                     | 15                             | 04_finetune |
+| **Reproducibility**     | Limited                | Excellent                      | 04c_custom |
+
+**Key Insight**: Batch size significantly impacts MNRL performance. Larger batches provide more negative samples (31 vs 15), leading to better contrastive learning. However, the custom training loop provides essential observability and stability benefits.
 
 ## 🔬 Technical Highlights
 
-1. **Efficient Contrastive Learning**
+1. **Efficient Contrastive Learning with MNRL**
    - MNRL automatically creates negatives from batch
    - No explicit negative mining required
-   - Scales well with batch size
+   - **Performance scales with batch size**: 32→31 negatives (nDCG 0.5534) vs 16→15 negatives (nDCG 0.5344)
+   - Trade-off between performance and memory/observability
 
-2. **GPU Acceleration**
-   - Training: 12 hours (CPU) → 2.6 hours (GPU)
-   - Inference: 1,028 queries/sec with GPU
-   - Memory optimized for 6GB VRAM
+2. **GPU Acceleration & Memory Optimization**
+   - Training: 12 hours (CPU) → 1-2.6 hours (GPU depending on batch size)
+   - Inference: 1,016 queries/sec with GPU
+   - Memory optimized for 6GB VRAM (batch_size=16 for stability)
+   - Custom training loop avoids OOM errors
 
-3. **Production-Ready Features**
+3. **Complete Training Observability**
+   - **1,692-step loss history** tracked and saved to JSON
+   - Loss reduction: 1.549 → 0.023 (98.5% decrease)
+   - Per-epoch checkpoints for analysis
+   - Enables debugging and understanding of training dynamics
+
+4. **Production-Ready Features**
    - Persistent FAISS indexes (save/load)
    - Batch processing for efficiency
-   - Comprehensive evaluation metrics
+   - Comprehensive evaluation metrics (Recall, MRR, nDCG, MAP)
    - Detailed logging and monitoring
 
 ## 🧪 Key Components
@@ -307,8 +348,8 @@ jupyter notebook notebooks/final_report.ipynb
 - **Week 3** (2 days): Fine-tuning ✅ COMPLETE
   - Training module with MNRL
   - GPU setup and optimization
-  - Model fine-tuning (2.6 hours)
-  - Fine-tuned evaluation (nDCG@10: 0.5534)
+  - Model fine-tuning (1.08 hours with custom loop)
+  - Fine-tuned evaluation (nDCG@10: 0.5344)
   
 - **Week 4** (1-2 days): Analysis & Report ✅ COMPLETE
   - Jupyter notebook with visualizations
@@ -345,5 +386,5 @@ MIT License - Educational and research purposes
 
 **Built with ❤️ using PyTorch, HuggingFace, and FAISS**
 
-🚀 **Production Ready!** Final nDCG@10: **0.5534** | Recall@10: **71.2%** | 75.7% better than CoIR benchmark!
+🚀 **Production Ready!** Final nDCG@10: **0.5344** | Recall@10: **70.6%** | 69.7% better than CoIR benchmark!
 
