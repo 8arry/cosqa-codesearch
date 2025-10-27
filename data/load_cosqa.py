@@ -7,7 +7,7 @@ from HuggingFace. The CoSQA dataset consists of three configurations:
 2. corpus: Python code snippets
 3. default (train/test/valid): Query-Corpus pairs with relevance scores
 
-Author: Your Name
+Author: Rui Tang
 Date: October 2025
 """
 

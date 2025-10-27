@@ -7,7 +7,6 @@ This script explores different FAISS index configurations:
 3. Performance vs accuracy trade-offs
 4. Memory usage comparison
 
-Task requirement: "向量存储超参数 - 未实现（可选）"
 """
 
 import sys
