@@ -17,6 +17,18 @@ A state-of-the-art dense retrieval system for code search, fine-tuned on the CoS
 **Training Method**: Custom training loop (04c_custom_training.py) with batch_size=16
 **vs CoIR Benchmark**: +69.7% improvement over published e5-base-v2 baseline!
 
+### 📊 Visual Results
+
+<div align="center">
+  <img src="results/performance_comparison.png" alt="Performance Comparison" width="800"/>
+  <p><i>Performance improvements across all metrics after fine-tuning</i></p>
+</div>
+
+<div align="center">
+  <img src="results/recall_at_k.png" alt="Recall@K Progression" width="800"/>
+  <p><i>Recall@K improvements: consistent gains across all K values</i></p>
+</div>
+
 ## 📋 Project Overview
 
 This project implements a complete code search solution:
@@ -193,6 +205,11 @@ Following [CoIR benchmark](https://arxiv.org/abs/2407.02883):
 | @50  | 83.8%    | 92.8%      | +10.7%      |
 | @100 | 89.8%    | 96.6%      | +7.6%       |
 
+<div align="center">
+  <img src="results/improvement_breakdown.png" alt="Improvement Breakdown" width="800"/>
+  <p><i>Detailed breakdown of improvements across different metrics</i></p>
+</div>
+
 ### Comparison with Published Baselines
 
 | Model                   | CoIR Benchmark | Our Implementation | Improvement |
@@ -202,19 +219,36 @@ Following [CoIR benchmark](https://arxiv.org/abs/2407.02883):
 
 *Note: Alternative implementation with batch_size=32 achieved nDCG@10=0.5534 (+75.7%), but sacrificed loss tracking.*
 
+<div align="center">
+  <img src="results/coir_comparison.png" alt="CoIR Benchmark Comparison" width="700"/>
+  <p><i>Comparison with published CoIR benchmark: significant improvements in both baseline and fine-tuned models</i></p>
+</div>
+
 ### Training Approach Comparison
 
-| Aspect                  | 04_finetune.py (bs=32) | 04c_custom_training.py (bs=16) | Winner |
-| ----------------------- | ---------------------- | ------------------------------ | ------ |
-| **nDCG@10**             | 0.5534                 | 0.5344                         | 04_finetune |
-| **Recall@10**           | 71.2%                  | 70.6%                          | 04_finetune |
-| **Loss Tracking**       | ❌ No                   | ✅ Yes (1,692 steps)            | 04c_custom |
-| **Training Time**       | 2.6 hours              | 1.08 hours                     | 04c_custom |
-| **Memory Stability**    | OOM prone              | Stable                         | 04c_custom |
-| **In-batch Negatives**  | 31                     | 15                             | 04_finetune |
-| **Reproducibility**     | Limited                | Excellent                      | 04c_custom |
+| Aspect                 | 04_finetune.py (bs=32) | 04c_custom_training.py (bs=16) | Winner      |
+| ---------------------- | ---------------------- | ------------------------------ | ----------- |
+| **nDCG@10**            | 0.5534                 | 0.5344                         | 04_finetune |
+| **Recall@10**          | 71.2%                  | 70.6%                          | 04_finetune |
+| **Loss Tracking**      | ❌ No                   | ✅ Yes (1,692 steps)            | 04c_custom  |
+| **Training Time**      | 2.6 hours              | 1.08 hours                     | 04c_custom  |
+| **Memory Stability**   | OOM prone              | Stable                         | 04c_custom  |
+| **In-batch Negatives** | 31                     | 15                             | 04_finetune |
+| **Reproducibility**    | Limited                | Excellent                      | 04c_custom  |
 
 **Key Insight**: Batch size significantly impacts MNRL performance. Larger batches provide more negative samples (31 vs 15), leading to better contrastive learning. However, the custom training loop provides essential observability and stability benefits.
+
+### 📉 Training Loss Progression
+
+<div align="center">
+  <img src="results/training_loss_curve.png" alt="Training Loss Over Time" width="800"/>
+  <p><i>Training loss reduction: 1.549 → 0.023 (98.5% decrease over 1,692 steps)</i></p>
+</div>
+
+<div align="center">
+  <img src="results/training_loss_by_epoch.png" alt="Loss by Epoch" width="800"/>
+  <p><i>Training loss progression across 3 epochs with clear convergence</i></p>
+</div>
 
 ## 🔬 Technical Highlights
 
@@ -235,6 +269,12 @@ Following [CoIR benchmark](https://arxiv.org/abs/2407.02883):
    - Loss reduction: 1.549 → 0.023 (98.5% decrease)
    - Per-epoch checkpoints for analysis
    - Enables debugging and understanding of training dynamics
+   
+   **Visual Training Summary:**
+   <div align="center">
+     <img src="results/training_summary.png" alt="Training Summary" width="800"/>
+     <p><i>Complete training overview: loss curves, epoch boundaries, and convergence analysis</i></p>
+   </div>
 
 4. **Production-Ready Features**
    - Persistent FAISS indexes (save/load)
@@ -334,18 +374,18 @@ jupyter notebook notebooks/final_report.ipynb
 
 ## 📈 Timeline & Status
 
-- **Week 1** (2 days): Infrastructure ✅ COMPLETE
+- **Phase 1** (1 days): Infrastructure ✅ COMPLETE
   - Data loader with caching
   - FAISS search engine
   - Evaluation metrics
   - Integration tests
   
-- **Week 2** (2 days): Baseline Evaluation ✅ COMPLETE
+- **Phase 2** (1 days): Baseline Evaluation ✅ COMPLETE
   - Data preparation
   - Index building (20,604 documents)
   - Baseline evaluation (nDCG@10: 0.4372)
   
-- **Week 3** (2 days): Fine-tuning ✅ COMPLETE
+- **Week 3** (1 days): Fine-tuning ✅ COMPLETE
   - Training module with MNRL
   - GPU setup and optimization
   - Model fine-tuning (1.08 hours with custom loop)
