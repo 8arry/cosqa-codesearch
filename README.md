@@ -405,13 +405,8 @@ jupyter notebook notebooks/final_report.ipynb
 5. **CoSQA Dataset**: [CoSQA on HuggingFace](https://huggingface.co/datasets/CoIR-Retrieval/cosqa)
 6. **Sentence Transformers**: [SBERT.net Documentation](https://www.sbert.net/)
 
-## 🤝 Team Access
 
-Repository shared with:
-- @evgenabramov
-- @Nikolai-Palchikov
-
-## � License
+## License
 
 MIT License - Educational and research purposes
 
