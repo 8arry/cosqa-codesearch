@@ -76,10 +76,10 @@ python scripts/04c_custom_training.py
 # Step 5: Evaluate fine-tuned model and compare
 python scripts/05_evaluate_finetuned.py --model-dir models/finetuned
 
-# Step 6 (Optional): Run bonus experiments
-python scripts/06_bonus_experiments.py
+# Step 6 (Bonus): Function names vs full bodies comparison
+python scripts/06b_function_name_only_experiment.py
 
-# Step 7 (Optional): FAISS hyperparameter optimization
+# Step 7 (Bonus): FAISS hyperparameter optimization
 python scripts/07_faiss_hyperparameters.py
 ```
 
@@ -124,8 +124,8 @@ cosqa-codesearch/
 │   ├── 04_finetune.py      # Basic fine-tuning (no loss tracking)
 │   ├── 04c_custom_training.py  # ⭐ Custom training with full loss tracking
 │   ├── 05_evaluate_finetuned.py  # Fine-tuned evaluation
-│   ├── 06_bonus_experiments.py  # Bonus analysis experiments
-│   ├── 07_faiss_hyperparameters.py  # FAISS hyperparameter tuning
+│   ├── 06b_function_name_only_experiment.py  # ⭐ Bonus: Names vs Bodies
+│   ├── 07_faiss_hyperparameters.py  # ⭐ Bonus: FAISS hyperparameter tuning
 │   └── 08_generate_final_report.py  # Results summary generator
 ├── notebooks/
 │   ├── explore_cosqa.ipynb # Dataset exploration
@@ -138,10 +138,7 @@ cosqa-codesearch/
 │   ├── *.json              # Baseline & finetuned metrics
 │   ├── *.png               # Performance charts & loss curves
 │   ├── bonus/              # Bonus experiment results
-│   │   ├── BONUS_EXPERIMENTS_SUMMARY.md
-│   │   ├── experiment1_function_name_impact.json
-│   │   ├── experiment2_query_type_analysis.json
-│   │   └── experiment3_code_complexity.json
+│   │   └── experiment_names_vs_bodies.json  # ⭐ Names vs Full Bodies
 │   └── faiss_hyperparams/  # FAISS optimization experiments
 │       ├── FAISS_EXPERIMENTS_SUMMARY.md
 │       └── *.json          # Hyperparameter sweep results
@@ -257,100 +254,45 @@ Following [CoIR benchmark](https://arxiv.org/abs/2407.02883):
 
 ## 🔬 Bonus Experiments
 
-Beyond standard evaluation, we conducted three in-depth experiments to understand system behavior:
+We conducted two critical experiments to answer key questions about system design:
 
-### Experiment 1: Function Name Impact Analysis 🏷️
+### Experiment 1: Function Names vs Full Code Bodies 🏷️
 
-**Question**: How much do function names contribute to search performance?
+**Question**: How do metrics change when indexing **only function names** instead of **complete code bodies**?
 
 **Method**:
-- Configuration A: Original function names (e.g., `def sort_list(...)`)
-- Configuration B: Generic placeholder (e.g., `def func(...)`)
+- **Configuration A**: Index only function names (e.g., `sort_list`, `calculate_sum`, `process_data`)
+- **Configuration B**: Index full code bodies (e.g., complete function definitions with logic)
 - Tested on full corpus (20,604 documents)
 
 **Results**:
 
-| Metric        | With Names | Without Names | Difference      |
-| ------------- | ---------- | ------------- | --------------- |
-| **nDCG@10**   | 0.5694     | 0.5674        | +0.0020 (0.3%)  |
-| **Recall@10** | 0.7325     | 0.7353        | -0.0028 (-0.4%) |
-| **MRR@10**    | 0.5192     | 0.5160        | +0.0032 (0.6%)  |
+| Metric        | Names Only | Full Bodies | Improvement  |
+| ------------- | ---------- | ----------- | ------------ |
+| **nDCG@10**   | 0.3613     | **0.5533**  | **+53.1%** 🚀 |
+| **Recall@10** | 0.5156     | **0.7308**  | **+41.7%** 🚀 |
+| **MRR@10**    | 0.3140     | **0.4992**  | **+59.0%** 🚀 |
+| **Recall@1**  | 0.2375     | **0.4182**  | **+76.1%** 🚀 |
 
-**Key Finding**: ✅ **Function names have minimal impact (<0.5%)**
+**Key Finding**: 🎯 **Full code bodies MASSIVELY outperform function names alone!**
 
-- Model primarily relies on **function body semantics**
-- Pre-trained e5-base-v2 understands code through context, not surface identifiers
-- **Practical Implication**: Effective even with poorly named functions or obfuscated code
+- **+53% nDCG@10**: Function names provide minimal semantic signal
+- **+76% Recall@1**: Finding the right code on first try nearly doubles with full context
+- **Why?** The model needs complete context—parameters, logic, variables, comments—to truly understand what code does
 
-### Experiment 2: Query Type Analysis 💬
+**Critical Insight**: 
+> Function names like `process` or `handle_data` are ambiguous. The actual implementation (`for item in data: validate(item)`) provides the semantic richness needed for accurate retrieval. **This is why semantic code search requires full code bodies, not just signatures.**
 
-**Distribution**:
-- Statement queries: 411 (82.2%) - e.g., "sort a list in python"
-- How questions: 88 (17.6%) - e.g., "how to efficiently process files"
-- What questions: 1 (0.2%)
+**Practical Implication**: 
+- ❌ Don't rely solely on function signatures for code search
+- ✅ Index complete function bodies with logic and context
+- ✅ Function/variable names help, but are not sufficient alone
 
-**Performance**:
-
-| Query Type    | Count | Success Rate | Avg Rank | Median Rank |
-| ------------- | ----- | ------------ | -------- | ----------- |
-| **Statement** | 411   | **97.3%**    | 8.8      | **2.0** 🎯   |
-| **How**       | 88    | 96.6%        | 13.4     | 7.0         |
-
-**Key Finding**: ✅ **Statement queries perform best**
-
-- Statement queries achieve median rank of **2** (very precise!)
-- "How" questions slightly harder but still >96% success
-- **Explanation**: Statements directly describe code functionality; "How" questions more abstract
-- **Suggestion**: For production, consider converting "How" questions to statements
-
-### Experiment 3: Code Complexity Impact 📏
-
-**Complexity Distribution**:
-
-| Category   | Lines | Count | Percentage | Avg Lines |
-| ---------- | ----- | ----- | ---------- | --------- |
-| Very Short | 3-5   | 171   | 34.2%      | 4.0       |
-| Short      | 6-10  | 251   | 50.2%      | 7.7       |
-| Medium     | 11-20 | 75    | 15.0%      | 12.9      |
-| Long       | 22-61 | 3     | 0.6%       | 35.7      |
-
-**Performance**:
-
-| Category   | Success Rate | Avg Rank  |
-| ---------- | ------------ | --------- |
-| **Long**   | **100.0%**   | **1.0** 🏆 |
-| **Medium** | **100.0%**   | 8.8       |
-| Short      | 97.2%        | 9.8       |
-| Very Short | 95.9%        | 9.9       |
-
-**Surprising Finding**: 🌟 **Longer code is EASIER to retrieve!**
-
-- Long code (22-61 lines): 100% success, average rank **1.0** (almost always #1!)
-- Medium code (11-20 lines): 100% success, average rank 8.8
-- Very short code (<5 lines): Lowest performance (95.9%)
-
-**Why?**
-- ✅ More semantic information (variables, function calls, context)
-- ✅ Higher uniqueness (short snippets often duplicate)
-- ✅ Richer matching signals for embeddings
-
-**Practical Implication**: Provide complete code snippets for better search results
-
-### Bonus Experiments Summary
-
-| Experiment      | Key Insight                | Actionable Advice                             |
-| --------------- | -------------------------- | --------------------------------------------- |
-| Function Names  | Impact < 0.5%              | Focus on code body, not naming conventions    |
-| Query Types     | Statements > How questions | Consider query reformulation for production   |
-| Code Complexity | Longer = Better            | Provide complete context, avoid over-trimming |
-
-**Overall**: System is robust with >95% success across all conditions, with strong semantic understanding beyond surface features.
-
-📁 **Detailed results**: `results/bonus/BONUS_EXPERIMENTS_SUMMARY.md`
+📁 **Detailed results**: `results/bonus/experiment_names_vs_bodies.json`
 
 ---
 
-## ⚡ FAISS Hyperparameter Optimization
+## ⚡ Experiment 2: FAISS Hyperparameter Optimization
 
 Beyond code semantics, we explored vector storage configurations to optimize search speed vs accuracy.
 
@@ -581,11 +523,9 @@ jupyter notebook notebooks/final_report.ipynb
   - Comprehensive documentation
   
 - **Phase 5** (Bonus): Deep Analysis ✅ COMPLETE
-  - Function name impact analysis
-  - Query type performance breakdown
-  - Code complexity experiments
+  - Function names vs full code bodies comparison
   - FAISS hyperparameter optimization
-  - 4 bonus experiments with actionable insights
+  - 2 bonus experiments directly answering project questions
 
 ## 🎓 References
 
