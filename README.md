@@ -78,6 +78,9 @@ python scripts/05_evaluate_finetuned.py --model-dir models/finetuned
 
 # Step 6 (Optional): Run bonus experiments
 python scripts/06_bonus_experiments.py
+
+# Step 7 (Optional): FAISS hyperparameter optimization
+python scripts/07_faiss_hyperparameters.py
 ```
 
 ### 3. Verify Installation (Optional)
@@ -134,11 +137,14 @@ cosqa-codesearch/
 ├── results/                # Evaluation metrics & visualizations
 │   ├── *.json              # Baseline & finetuned metrics
 │   ├── *.png               # Performance charts & loss curves
-│   └── bonus/              # Bonus experiment results
-│       ├── BONUS_EXPERIMENTS_SUMMARY.md
-│       ├── experiment1_function_name_impact.json
-│       ├── experiment2_query_type_analysis.json
-│       └── experiment3_code_complexity.json
+│   ├── bonus/              # Bonus experiment results
+│   │   ├── BONUS_EXPERIMENTS_SUMMARY.md
+│   │   ├── experiment1_function_name_impact.json
+│   │   ├── experiment2_query_type_analysis.json
+│   │   └── experiment3_code_complexity.json
+│   └── faiss_hyperparams/  # FAISS optimization experiments
+│       ├── FAISS_EXPERIMENTS_SUMMARY.md
+│       └── *.json          # Hyperparameter sweep results
 ├── learning/               # Self-learning materials (6-week plan)
 └── requirements.txt
 ```
@@ -342,6 +348,80 @@ Beyond standard evaluation, we conducted three in-depth experiments to understan
 
 📁 **Detailed results**: `results/bonus/BONUS_EXPERIMENTS_SUMMARY.md`
 
+---
+
+## ⚡ FAISS Hyperparameter Optimization
+
+Beyond code semantics, we explored vector storage configurations to optimize search speed vs accuracy.
+
+### Experiment Setup
+
+- **Index Types**: Flat (exact) vs IVF (approximate)
+- **Corpus**: 20,604 documents (768-dim embeddings)
+- **Parameters**: nlist (cluster count), nprobe (search clusters)
+- **Test**: 500 queries on fine-tuned model
+
+### Index Type Comparison
+
+| Configuration     | Recall@10 | nDCG@10 | Search Time | Queries/sec   |
+| ----------------- | --------- | ------- | ----------- | ------------- |
+| **Flat** (exact)  | 0.5560    | 0.4648  | 0.079s      | **6,309/s** ⚡ |
+| **IVF** (default) | 0.5540    | 0.4773  | 0.097s      | 5,143/s       |
+
+**Key Finding**: Flat index is fastest for our corpus size (20K docs)!
+
+### IVF nlist Parameter Sweep
+
+Controls clustering granularity (tested with nprobe=nlist/10):
+
+| nlist   | nprobe | Recall@10  | nDCG@10    | Search Time |
+| ------- | ------ | ---------- | ---------- | ----------- |
+| 71      | 7      | 0.5560     | 0.4723     | 0.089s      |
+| 143     | 14     | 0.5540     | 0.4773     | 0.103s      |
+| 286     | 28     | 0.5560     | 0.4819     | 0.168s      |
+| **572** | **57** | **0.5700** | **0.4856** | 0.113s      |
+
+**Insight**: Higher nlist (more clusters) improves recall slightly but increases complexity.
+
+### IVF nprobe Parameter Sweep
+
+Critical accuracy vs speed trade-off (fixed nlist=143):
+
+| nprobe | Recall@10 | nDCG@10 | Search Time | Queries/sec  | Speed vs Accuracy    |
+| ------ | --------- | ------- | ----------- | ------------ | -------------------- |
+| 1      | 0.3940    | 0.3514  | 0.024s      | **20,957/s** | 🚀 Fast, low accuracy |
+| 5      | 0.5340    | 0.4645  | 0.044s      | 11,306/s     | ⚖️ Balanced           |
+| 10     | 0.5520    | 0.4765  | 0.079s      | 6,308/s      | ⚖️ Good balance       |
+| 20     | 0.5620    | 0.4818  | 0.134s      | 3,727/s      | ⚖️ Accuracy focus     |
+| 50     | 0.5700    | 0.4870  | 0.299s      | 1,672/s      | 🎯 High accuracy      |
+| 143    | 0.5720    | 0.4883  | 0.894s      | 560/s        | 🐢 Nearly exact       |
+
+**Critical Insight**: 🎯 **nprobe is the performance knob!**
+
+- **nprobe=1**: 3.3x faster but -28% recall (not recommended)
+- **nprobe=5-10**: Sweet spot for most applications
+- **nprobe=50+**: Approaching exact search accuracy
+
+### Production Recommendations
+
+| Use Case               | Configuration                 | Rationale                      |
+| ---------------------- | ----------------------------- | ------------------------------ |
+| **🚀 Our corpus (20K)** | **Flat index**                | Simple, fastest, exact results |
+| **📊 100K-1M docs**     | IVF with nlist=286, nprobe=28 | Good balance                   |
+| **⚡ Low latency**      | IVF with nprobe=5-10          | Acceptable accuracy, 2x faster |
+| **🎯 High accuracy**    | IVF with nprobe≥50            | Near-exact results             |
+| **🌐 10M+ docs**        | IVF with nlist=√N, nprobe=10% | Scalability                    |
+
+### Key Takeaways
+
+1. ✅ **For ≤100K corpus**: Flat index is simplest and often fastest
+2. 📈 **nlist**: Set to √N to 2√N for large corpora
+3. ⚡ **nprobe**: Start at 10, tune based on latency requirements
+4. 🎯 **Accuracy loss**: IVF can match 97-99% of Flat accuracy with proper nprobe
+5. 🔧 **Trade-off sweet spot**: nprobe=10-20 for most production scenarios
+
+📁 **Detailed results**: `results/faiss_hyperparams/FAISS_EXPERIMENTS_SUMMARY.md`
+
 ### 📉 Training Loss Progression
 
 <div align="center">
@@ -504,7 +584,8 @@ jupyter notebook notebooks/final_report.ipynb
   - Function name impact analysis
   - Query type performance breakdown
   - Code complexity experiments
-  - 3 bonus experiments with actionable insights
+  - FAISS hyperparameter optimization
+  - 4 bonus experiments with actionable insights
 
 ## 🎓 References
 
