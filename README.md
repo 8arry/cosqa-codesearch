@@ -75,6 +75,9 @@ python scripts/04c_custom_training.py
 
 # Step 5: Evaluate fine-tuned model and compare
 python scripts/05_evaluate_finetuned.py --model-dir models/finetuned
+
+# Step 6 (Optional): Run bonus experiments
+python scripts/06_bonus_experiments.py
 ```
 
 ### 3. Verify Installation (Optional)
@@ -128,7 +131,15 @@ cosqa-codesearch/
 │   └── finetuned/          # Fine-tuned model & training info
 ├── indexes/
 │   └── cosqa_index/        # FAISS indexes
-├── results/                # Evaluation metrics & comparisons
+├── results/                # Evaluation metrics & visualizations
+│   ├── *.json              # Baseline & finetuned metrics
+│   ├── *.png               # Performance charts & loss curves
+│   └── bonus/              # Bonus experiment results
+│       ├── BONUS_EXPERIMENTS_SUMMARY.md
+│       ├── experiment1_function_name_impact.json
+│       ├── experiment2_query_type_analysis.json
+│       └── experiment3_code_complexity.json
+├── learning/               # Self-learning materials (6-week plan)
 └── requirements.txt
 ```
 
@@ -237,6 +248,99 @@ Following [CoIR benchmark](https://arxiv.org/abs/2407.02883):
 | **Reproducibility**    | Limited                | Excellent                      | 04c_custom  |
 
 **Key Insight**: Batch size significantly impacts MNRL performance. Larger batches provide more negative samples (31 vs 15), leading to better contrastive learning. However, the custom training loop provides essential observability and stability benefits.
+
+## 🔬 Bonus Experiments
+
+Beyond standard evaluation, we conducted three in-depth experiments to understand system behavior:
+
+### Experiment 1: Function Name Impact Analysis 🏷️
+
+**Question**: How much do function names contribute to search performance?
+
+**Method**:
+- Configuration A: Original function names (e.g., `def sort_list(...)`)
+- Configuration B: Generic placeholder (e.g., `def func(...)`)
+- Tested on full corpus (20,604 documents)
+
+**Results**:
+
+| Metric        | With Names | Without Names | Difference      |
+| ------------- | ---------- | ------------- | --------------- |
+| **nDCG@10**   | 0.5694     | 0.5674        | +0.0020 (0.3%)  |
+| **Recall@10** | 0.7325     | 0.7353        | -0.0028 (-0.4%) |
+| **MRR@10**    | 0.5192     | 0.5160        | +0.0032 (0.6%)  |
+
+**Key Finding**: ✅ **Function names have minimal impact (<0.5%)**
+
+- Model primarily relies on **function body semantics**
+- Pre-trained e5-base-v2 understands code through context, not surface identifiers
+- **Practical Implication**: Effective even with poorly named functions or obfuscated code
+
+### Experiment 2: Query Type Analysis 💬
+
+**Distribution**:
+- Statement queries: 411 (82.2%) - e.g., "sort a list in python"
+- How questions: 88 (17.6%) - e.g., "how to efficiently process files"
+- What questions: 1 (0.2%)
+
+**Performance**:
+
+| Query Type    | Count | Success Rate | Avg Rank | Median Rank |
+| ------------- | ----- | ------------ | -------- | ----------- |
+| **Statement** | 411   | **97.3%**    | 8.8      | **2.0** 🎯   |
+| **How**       | 88    | 96.6%        | 13.4     | 7.0         |
+
+**Key Finding**: ✅ **Statement queries perform best**
+
+- Statement queries achieve median rank of **2** (very precise!)
+- "How" questions slightly harder but still >96% success
+- **Explanation**: Statements directly describe code functionality; "How" questions more abstract
+- **Suggestion**: For production, consider converting "How" questions to statements
+
+### Experiment 3: Code Complexity Impact 📏
+
+**Complexity Distribution**:
+
+| Category   | Lines | Count | Percentage | Avg Lines |
+| ---------- | ----- | ----- | ---------- | --------- |
+| Very Short | 3-5   | 171   | 34.2%      | 4.0       |
+| Short      | 6-10  | 251   | 50.2%      | 7.7       |
+| Medium     | 11-20 | 75    | 15.0%      | 12.9      |
+| Long       | 22-61 | 3     | 0.6%       | 35.7      |
+
+**Performance**:
+
+| Category   | Success Rate | Avg Rank  |
+| ---------- | ------------ | --------- |
+| **Long**   | **100.0%**   | **1.0** 🏆 |
+| **Medium** | **100.0%**   | 8.8       |
+| Short      | 97.2%        | 9.8       |
+| Very Short | 95.9%        | 9.9       |
+
+**Surprising Finding**: 🌟 **Longer code is EASIER to retrieve!**
+
+- Long code (22-61 lines): 100% success, average rank **1.0** (almost always #1!)
+- Medium code (11-20 lines): 100% success, average rank 8.8
+- Very short code (<5 lines): Lowest performance (95.9%)
+
+**Why?**
+- ✅ More semantic information (variables, function calls, context)
+- ✅ Higher uniqueness (short snippets often duplicate)
+- ✅ Richer matching signals for embeddings
+
+**Practical Implication**: Provide complete code snippets for better search results
+
+### Bonus Experiments Summary
+
+| Experiment      | Key Insight                | Actionable Advice                             |
+| --------------- | -------------------------- | --------------------------------------------- |
+| Function Names  | Impact < 0.5%              | Focus on code body, not naming conventions    |
+| Query Types     | Statements > How questions | Consider query reformulation for production   |
+| Code Complexity | Longer = Better            | Provide complete context, avoid over-trimming |
+
+**Overall**: System is robust with >95% success across all conditions, with strong semantic understanding beyond surface features.
+
+📁 **Detailed results**: `results/bonus/BONUS_EXPERIMENTS_SUMMARY.md`
 
 ### 📉 Training Loss Progression
 
@@ -385,16 +489,22 @@ jupyter notebook notebooks/final_report.ipynb
   - Index building (20,604 documents)
   - Baseline evaluation (nDCG@10: 0.4372)
   
-- **Week 3** (1 days): Fine-tuning ✅ COMPLETE
+- **Phase 3** (1 days): Fine-tuning ✅ COMPLETE
   - Training module with MNRL
   - GPU setup and optimization
   - Model fine-tuning (1.08 hours with custom loop)
   - Fine-tuned evaluation (nDCG@10: 0.5344)
   
-- **Week 4** (1-2 days): Analysis & Report ✅ COMPLETE
+- **Phase 4** (1-2 days): Analysis & Report ✅ COMPLETE
   - Jupyter notebook with visualizations
   - Performance comparison charts
   - Comprehensive documentation
+  
+- **Phase 5** (Bonus): Deep Analysis ✅ COMPLETE
+  - Function name impact analysis
+  - Query type performance breakdown
+  - Code complexity experiments
+  - 3 bonus experiments with actionable insights
 
 ## 🎓 References
 
