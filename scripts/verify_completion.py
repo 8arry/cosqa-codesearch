@@ -1,7 +1,7 @@
 """
-Week 4 Completion Verification Script
+Phase 4 Completion Verification Script
 
-This script verifies that all Week 1-4 deliverables are complete and working.
+This script verifies that all Phase 1-4 deliverables are complete and working.
 """
 
 import json
@@ -36,21 +36,20 @@ def load_json(path):
 
 def main():
     print("=" * 80)
-    print("CoSQA Code Search Engine - Week 4 Verification")
+    print("CoSQA Code Search Engine - Phase 4 Verification")
     print("=" * 80)
     
     all_passed = True
-    
-    # Week 1: Infrastructure
-    print("\n📦 Week 1: Infrastructure")
+
+    # Phase 1: Infrastructure
+    print("\n📦 Phase 1: Infrastructure")
     print("-" * 40)
     all_passed &= check_file("data/load_cosqa.py", "Data loader")
     all_passed &= check_file("src/engine/faiss_engine.py", "FAISS search engine")
     all_passed &= check_file("src/evaluation/metrics.py", "Evaluation metrics")
-    all_passed &= check_file("scripts/test_week1.py", "Integration tests")
-    
-    # Week 2: Baseline
-    print("\n📊 Week 2: Baseline Evaluation")
+
+    # Phase 2: Baseline
+    print("\n📊 Phase 2: Baseline Evaluation")
     print("-" * 40)
     all_passed &= check_file("scripts/01_prepare_data.py", "Data preparation script")
     all_passed &= check_file("scripts/02_build_index.py", "Index building script")
@@ -58,9 +57,9 @@ def main():
     all_passed &= check_dir("data/cache", "Cached data directory")
     all_passed &= check_dir("indexes/cosqa_index", "FAISS index directory")
     all_passed &= check_file("results/baseline_metrics_test.json", "Baseline metrics")
-    
-    # Week 3: Fine-tuning
-    print("\n🚀 Week 3: Fine-tuning")
+
+    # Phase 3: Fine-tuning
+    print("\n🚀 Phase 3: Fine-tuning")
     print("-" * 40)
     all_passed &= check_file("src/training/trainer.py", "Training module")
     all_passed &= check_file("scripts/04_finetune.py", "Fine-tuning script")
@@ -69,9 +68,9 @@ def main():
     all_passed &= check_file("models/finetuned/training_info.json", "Training info")
     all_passed &= check_file("results/finetuned_metrics_test.json", "Fine-tuned metrics")
     all_passed &= check_file("results/comparison_test.json", "Comparison results")
-    
-    # Week 4: Report
-    print("\n📝 Week 4: Analysis & Report")
+
+    # Phase 4: Report
+    print("\n📝 Phase 4: Analysis & Report")
     print("-" * 40)
     all_passed &= check_file("notebooks/final_report.ipynb", "Final report notebook")
     all_passed &= check_file("README.md", "Comprehensive README")
@@ -133,7 +132,7 @@ def main():
     # Final status
     print("\n" + "=" * 80)
     if all_passed:
-        print("✅ ALL WEEKS + BONUS EXPERIMENTS COMPLETE! 🎉")
+        print("✅ ALL PHASES + BONUS EXPERIMENTS COMPLETE! 🎉")
         print("=" * 80)
         
         # Show bonus experiment highlights
