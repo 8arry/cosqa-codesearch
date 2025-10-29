@@ -81,15 +81,24 @@ python scripts/06b_function_name_only_experiment.py
 
 # Step 7 (Bonus): FAISS hyperparameter optimization
 python scripts/07_faiss_hyperparameters.py
+
+# Step 8: Generate final summary report
+python scripts/08_generate_final_report.py
 ```
 
-### 3. Verify Installation (Optional)
+### 3. View Final Report
+
+Open the comprehensive Jupyter notebook with all results and visualizations:
 
 ```powershell
-python scripts/test_week1.py
+jupyter notebook notebooks/final_report.ipynb
 ```
 
-Expected output: All tests should PASS ✓
+Or verify project completion:
+
+```powershell
+python scripts/verify_completion.py
+```
 
 ## 📊 Dataset: CoSQA
 
@@ -117,7 +126,6 @@ cosqa-codesearch/
 │   └── training/
 │       └── trainer.py      # Fine-tuning with MNRL
 ├── scripts/
-│   ├── test_week1.py       # Week 1 verification tests
 │   ├── 01_prepare_data.py  # Data preparation & caching
 │   ├── 02_build_index.py   # FAISS index construction
 │   ├── 03_evaluate_baseline.py  # Baseline evaluation
@@ -126,7 +134,9 @@ cosqa-codesearch/
 │   ├── 05_evaluate_finetuned.py  # Fine-tuned evaluation
 │   ├── 06b_function_name_only_experiment.py  # ⭐ Bonus: Names vs Bodies
 │   ├── 07_faiss_hyperparameters.py  # ⭐ Bonus: FAISS hyperparameter tuning
-│   └── 08_generate_final_report.py  # Results summary generator
+│   ├── 08_generate_final_report.py  # Results summary generator
+│   ├── plot_training_loss.py  # Training loss visualization
+│   └── verify_completion.py  # Project completion verification
 ├── notebooks/
 │   ├── explore_cosqa.ipynb # Dataset exploration
 │   └── final_report.ipynb  # Comprehensive results & visualizations
@@ -483,9 +493,9 @@ Features:
 
 ## 🔧 Development
 
-### Run Tests
+### Verify Project Completion
 ```powershell
-python scripts/test_week1.py
+python scripts/verify_completion.py
 ```
 
 ### Explore Data
