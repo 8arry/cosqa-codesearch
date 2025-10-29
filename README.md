@@ -322,14 +322,14 @@ We conducted two critical experiments to answer key questions about system desig
 
 Beyond code semantics, we explored vector storage configurations to optimize search speed vs accuracy.
 
-**Experiment Setup**
+#### Experiment Setup
 
 - **Index Types**: Flat (exact) vs IVF (approximate)
 - **Corpus**: 20,604 documents (768-dim embeddings)
 - **Parameters**: nlist (cluster count), nprobe (search clusters)
 - **Test**: 500 queries on fine-tuned model
 
-**Index Type Comparison**
+#### Index Type Comparison
 
 | Configuration     | Recall@10 | nDCG@10 | Search Time | Queries/sec   |
 | ----------------- | --------- | ------- | ----------- | ------------- |
@@ -338,7 +338,7 @@ Beyond code semantics, we explored vector storage configurations to optimize sea
 
 **Key Finding**: Flat index is fastest for our corpus size (20K docs)!
 
-**IVF nlist Parameter Sweep**
+#### IVF nlist Parameter Sweep
 
 Controls clustering granularity (tested with nprobe=nlist/10):
 
@@ -351,7 +351,7 @@ Controls clustering granularity (tested with nprobe=nlist/10):
 
 **Insight**: Higher nlist (more clusters) improves recall slightly but increases complexity.
 
-**IVF nprobe Parameter Sweep**
+#### IVF nprobe Parameter Sweep
 
 Critical accuracy vs speed trade-off (fixed nlist=143):
 
@@ -370,7 +370,7 @@ Critical accuracy vs speed trade-off (fixed nlist=143):
 - **nprobe=5-10**: Sweet spot for most applications
 - **nprobe=50+**: Approaching exact search accuracy
 
-**Production Recommendations**
+#### Production Recommendations
 
 | Use Case               | Configuration                 | Rationale                      |
 | ---------------------- | ----------------------------- | ------------------------------ |
@@ -380,7 +380,7 @@ Critical accuracy vs speed trade-off (fixed nlist=143):
 | **🎯 High accuracy**    | IVF with nprobe≥50            | Near-exact results             |
 | **🌐 10M+ docs**        | IVF with nlist=√N, nprobe=10% | Scalability                    |
 
-**Key Takeaways**
+#### Key Takeaways
 
 1. ✅ **For ≤100K corpus**: Flat index is simplest and often fastest
 2. 📈 **nlist**: Set to √N to 2√N for large corpora
