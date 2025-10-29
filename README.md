@@ -86,15 +86,30 @@ python scripts/07_faiss_hyperparameters.py
 python scripts/08_generate_final_report.py
 ```
 
-### 3. View Final Report
+### 3. Demo & Reports
 
-Open the comprehensive Jupyter notebook with all results and visualizations:
+#### Part 1: Search Engine Demo (Task Requirement)
+Interactive demonstration of the embeddings-based search engine:
+
+```powershell
+jupyter notebook notebooks/demo_search_engine.ipynb
+```
+
+This notebook demonstrates:
+- ✅ Document ingestion API
+- ✅ Search API with text queries
+- ✅ Pretrained embeddings (e5-base-v2)
+- ✅ FAISS vector storage
+- ✅ Test samples from CoSQA
+
+#### Full Project Report
+Comprehensive results with all 3 parts (Search Engine + Evaluation + Fine-tuning):
 
 ```powershell
 jupyter notebook notebooks/final_report.ipynb
 ```
 
-Or verify project completion:
+#### Verify Completion
 
 ```powershell
 python scripts/verify_completion.py
@@ -138,8 +153,9 @@ cosqa-codesearch/
 │   ├── plot_training_loss.py  # Training loss visualization
 │   └── verify_completion.py  # Project completion verification
 ├── notebooks/
+│   ├── demo_search_engine.ipynb  # ⭐ Part 1: Search engine demo
 │   ├── explore_cosqa.ipynb # Dataset exploration
-│   └── final_report.ipynb  # Comprehensive results & visualizations
+│   └── final_report.ipynb  # Comprehensive results & visualizations (Parts 1-3)
 ├── models/
 │   └── finetuned/          # Fine-tuned model & training info
 ├── indexes/
