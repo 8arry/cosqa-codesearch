@@ -33,7 +33,7 @@ A state-of-the-art dense retrieval system for code search, fine-tuned on the CoS
 
 This project implements a complete code search solution:
 1. **Search Engine**: FAISS-based dense retrieval with e5-base-v2 embeddings
-2. **Evaluation**: Standard IR metrics (Recall@K, MRR@K, nDCG@K) on 20,604 corpus
+2. **Evaluation**: Standard IR(Information Retrieval) metrics (Recall@K, MRR@K, nDCG@K) on 20,604 corpus
 3. **Fine-tuning**: Multiple Negatives Ranking Loss on 9,020 training pairs
 4. **Results**: 26.6% improvement in nDCG@10, 71.2% Recall@10 on test set
 
@@ -302,18 +302,18 @@ We conducted two critical experiments to answer key questions about system desig
 
 ---
 
-## ⚡ Experiment 2: FAISS Hyperparameter Optimization
+### ⚡ Experiment 2: FAISS Hyperparameter Optimization
 
 Beyond code semantics, we explored vector storage configurations to optimize search speed vs accuracy.
 
-### Experiment Setup
+**Experiment Setup**
 
 - **Index Types**: Flat (exact) vs IVF (approximate)
 - **Corpus**: 20,604 documents (768-dim embeddings)
 - **Parameters**: nlist (cluster count), nprobe (search clusters)
 - **Test**: 500 queries on fine-tuned model
 
-### Index Type Comparison
+**Index Type Comparison**
 
 | Configuration     | Recall@10 | nDCG@10 | Search Time | Queries/sec   |
 | ----------------- | --------- | ------- | ----------- | ------------- |
@@ -322,7 +322,7 @@ Beyond code semantics, we explored vector storage configurations to optimize sea
 
 **Key Finding**: Flat index is fastest for our corpus size (20K docs)!
 
-### IVF nlist Parameter Sweep
+**IVF nlist Parameter Sweep**
 
 Controls clustering granularity (tested with nprobe=nlist/10):
 
@@ -335,7 +335,7 @@ Controls clustering granularity (tested with nprobe=nlist/10):
 
 **Insight**: Higher nlist (more clusters) improves recall slightly but increases complexity.
 
-### IVF nprobe Parameter Sweep
+**IVF nprobe Parameter Sweep**
 
 Critical accuracy vs speed trade-off (fixed nlist=143):
 
@@ -354,7 +354,7 @@ Critical accuracy vs speed trade-off (fixed nlist=143):
 - **nprobe=5-10**: Sweet spot for most applications
 - **nprobe=50+**: Approaching exact search accuracy
 
-### Production Recommendations
+**Production Recommendations**
 
 | Use Case               | Configuration                 | Rationale                      |
 | ---------------------- | ----------------------------- | ------------------------------ |
@@ -364,7 +364,7 @@ Critical accuracy vs speed trade-off (fixed nlist=143):
 | **🎯 High accuracy**    | IVF with nprobe≥50            | Near-exact results             |
 | **🌐 10M+ docs**        | IVF with nlist=√N, nprobe=10% | Scalability                    |
 
-### Key Takeaways
+**Key Takeaways**
 
 1. ✅ **For ≤100K corpus**: Flat index is simplest and often fastest
 2. 📈 **nlist**: Set to √N to 2√N for large corpora
@@ -374,7 +374,7 @@ Critical accuracy vs speed trade-off (fixed nlist=143):
 
 📁 **Detailed results**: `results/faiss_hyperparams/FAISS_EXPERIMENTS_SUMMARY.md`
 
-### 📉 Training Loss Progression
+## 📉 Training Loss Progression
 
 <div align="center">
   <img src="results/training_loss_curve.png" alt="Training Loss Over Time" width="800"/>
