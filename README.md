@@ -6,6 +6,12 @@
 
 A state-of-the-art dense retrieval system for code search, fine-tuned on the CoSQA dataset.
 
+> **📌 For Reviewers**: 
+> - **Part 1 Demo**: [`notebooks/demo_search_engine.ipynb`](notebooks/demo_search_engine.ipynb) - Interactive search engine demonstration
+> - **Parts 2 & 3 Report**: [`notebooks/final_report.ipynb`](notebooks/final_report.ipynb) - Evaluation & fine-tuning results
+> - **Quick Start**: See [🚀 Quick Start](#-quick-start) section below for setup instructions
+> - **All task requirements completed** including both bonus experiments
+
 ## 🏆 Key Results
 
 | Metric        | Baseline | Fine-tuned | Improvement  |
