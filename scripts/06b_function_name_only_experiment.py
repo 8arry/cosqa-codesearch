@@ -9,7 +9,6 @@ This directly answers the bonus question:
 "How do the metrics change when you apply the model to function names 
 instead of whole bodies?"
 
-Author: CoSQA Team
 Date: October 2025
 """
 
